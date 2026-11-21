@@ -1,0 +1,18 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Yahiazakiz OS</title></head>
+<body style="margin:0;background:#111b24;color:#eef5fc;font:16px system-ui;padding:24px">
+<p id="status" role="status">Checking for the latest Yahiazakiz OS…</p><button id="retry" hidden>Try again</button><button id="older" hidden>Load saved version instead</button>
+<script>
+(()=>{
+const repo='dS6667STORM/Yahiazakiz-os',file=encodeURIComponent('yahiazakiz os.html'),key='yahiazakiz-loader-commit',status=document.getElementById('status'),retry=document.getElementById('retry'),older=document.getElementById('older');let saved='',busy=false;const tmo=ms=>{const c=new AbortController();setTimeout(()=>c.abort(),ms);return c.signal};const info=document.createElement('pre');info.style.cssText='white-space:pre-wrap;font:12px monospace;opacity:.7';document.body.appendChild(info);const log=[];
+try{saved=localStorage.getItem(key)||''}catch{}
+const raw=ref=>'https://raw.githubusercontent.com/'+repo+'/'+ref+'/'+file;
+const cdns=ref=>['cdn.jsdelivr.net','fastly.jsdelivr.net','gcore.jsdelivr.net'].map(host=>'https://'+host+'/gh/'+repo+'@'+ref+'/'+file);
+async function download(url,ref){try{const r=await fetch(url+'?storm_load='+Date.now(),{cache:'no-store',signal:tmo(20000)});if(!r.ok){log.push(new URL(url).host+' -> HTTP '+r.status);return false}const html=await r.text();if(!/<(!doctype|html)[\s>]/i.test(html)){log.push(new URL(url).host+' -> not an HTML page');return false}try{if(/^[a-f0-9]{40}$/.test(ref))localStorage.setItem(key,ref)}catch{}window.stormLoaderInfo={ref,source:url};document.open();document.write(html);document.close();return true}catch(e){log.push(new URL(url).host+' -> '+(e&&e.name||'error')+': '+(e&&e.message||''));return false}}
+async function start(){if(busy)return;busy=true;retry.hidden=older.hidden=true;status.textContent='Checking for the latest Yahiazakiz OS…';let latest='';try{const r=await fetch('https://api.github.com/repos/'+repo+'/commits/main?storm_check='+Date.now(),{cache:'no-store',signal:tmo(8000)});if(r.ok){const data=await r.json();if(/^[a-f0-9]{40}$/.test(data.sha))latest=data.sha}}catch{}
+// A known current commit must never silently fall back to an older commit.
+const sources=latest?[raw(latest),...cdns(latest),raw('main')]:[raw('main'),...cdns('main')];log.length=0;info.textContent='';for(const url of sources){status.textContent=latest?'Loading the latest verified version…':'GitHub version check unavailable. Trying the current branch…';if(await download(url,latest||'main'))return}
+busy=false;status.textContent='The current version could not be loaded. Retry, or explicitly open your saved version.';info.textContent=log.join('\n');retry.hidden=false;older.hidden=!/^[a-f0-9]{40}$/.test(saved)}
+retry.onclick=start;older.onclick=async()=>{if(busy)return;busy=true;status.textContent='Loading your saved version (may be outdated)…';for(const url of [raw(saved),...cdns(saved)])if(await download(url,saved))return;busy=false;status.textContent='Saved version unavailable. Check your connection and retry.'};start();
+})();
+</script></body></html>
