@@ -1,0 +1,32 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>yahiazakiz os</title></head>
+<body style="margin:0;background:#050806;color:#7dffa0;font:16px ui-monospace,Menlo,Consolas,monospace;padding:24px">
+<p id="status" role="status">Checking for the latest yahiazakiz os…</p><button id="retry" hidden>Try again</button> <button id="older" hidden>Load saved version instead</button>
+<script>
+(()=>{
+/* ===== SET THESE ===== */
+const repo='dS6667STORM/Yahiazakiz-os';
+const file='yahiazakiz os.html';
+const branch='main';
+/* ===================== */
+const key='yz-loader-'+repo.replace(/\W/g,'_')+'-commit',status=document.getElementById('status'),retry=document.getElementById('retry'),older=document.getElementById('older');let saved='',busy=false;const why=[];
+try{saved=localStorage.getItem(key)||''}catch{}
+const path=encodeURI(file);
+const raw=ref=>'https://raw.githubusercontent.com/'+repo+'/'+ref+'/'+path;
+const cdns=ref=>['cdn.jsdelivr.net','fastly.jsdelivr.net','gcore.jsdelivr.net'].map(host=>'https://'+host+'/gh/'+repo+'@'+ref+'/'+path);
+const tfetch=(u,ms)=>Promise.race([fetch(u,{cache:'no-store'}),new Promise((_,j)=>setTimeout(()=>j(new Error('timeout')),ms))]);
+const isSha=s=>/^[a-f0-9]{40}$/.test(s);
+async function download(url,ref){try{const r=await tfetch(url+'?yz_load='+Date.now(),120000);if(!r.ok){why.push(url.split('/')[2]+' → HTTP '+r.status);return false}const html=await r.text();if(!/<html[\s>]/i.test(html)||!html.includes('yahiazakiz os')){why.push(url.split('/')[2]+' → file not recognised');return false}try{if(isSha(ref))localStorage.setItem(key,ref)}catch{}window.yzLoaderInfo={ref,source:url};document.open();document.write(html);document.close();return true}catch(e){why.push(url.split('/')[2]+' → '+((e&&e.name||'error')+': '+String(e&&e.message||'').slice(0,60)));return false}}
+async function start(){if(busy)return;
+if(repo.startsWith('YOUR-')){status.textContent='Setup needed: open this file and set repo and file at the top of the script.';return}
+busy=true;retry.hidden=older.hidden=true;status.textContent='Checking for the latest yahiazakiz os…';let latest='';
+try{const r=await tfetch('https://api.github.com/repos/'+repo+'/commits/'+branch+'?yz_check='+Date.now(),8000);if(r.ok){const data=await r.json();if(isSha(data.sha))latest=data.sha}}catch{}
+// A known current commit never silently falls back to an older one.
+const sources=latest?[raw(latest),...cdns(latest)]:[raw(branch),...cdns(branch)];
+for(const url of sources){status.textContent=latest?'Loading the latest version…':'GitHub version check unavailable. Trying the current branch…';if(await download(url,latest||branch))return}
+busy=false;status.textContent='The current version could not be loaded. Retry, or explicitly open your saved version. Details: '+why.slice(-4).join(' | ');retry.hidden=false;older.hidden=!isSha(saved)}
+retry.onclick=start;
+older.onclick=async()=>{if(busy)return;busy=true;status.textContent='Loading your saved version (may be outdated)…';for(const url of [raw(saved),...cdns(saved)])if(await download(url,saved))return;busy=false;status.textContent='Saved version unavailable. Check your connection and retry.'};
+start();
+})();
+</script></body></html>
