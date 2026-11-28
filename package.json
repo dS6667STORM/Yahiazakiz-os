@@ -1,0 +1,16 @@
+{
+  "name": "yahiazakiz-os-render",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "YAHIAZAKIZ OS with same-origin Bare and Wisp proxy endpoints for Render",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@mercuryworkshop/wisp-js": "0.5.3",
+    "@tomphttp/bare-server-node": "2.0.3"
+  },
+  "engines": { "node": ">=22" }
+}
